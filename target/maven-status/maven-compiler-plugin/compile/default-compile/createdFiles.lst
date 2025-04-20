@@ -1,0 +1,3 @@
+com/helix/demo/participant/HelixParticipant.class
+com/helix/demo/controller/HelixController.class
+com/helix/demo/setup/HelixClusterSetup.class
