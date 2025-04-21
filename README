@@ -1,0 +1,90 @@
+# Apache Helix Demo (v1.4.3)
+
+This is a minimal demo project using Apache Helix version 1.4.3 to demonstrate how to register a Controller and multiple Participants in a distributed cluster managed via ZooKeeper.
+
+> ⚠️ Note: This demo does **not include Master/Slave state transitions**, because `StateMachineEngine` and related APIs were removed from `helix-core` in 1.x versions.
+
+---
+
+## 🔧 Technology Stack
+
+- Java 11+
+- Apache Helix 1.4.3
+- ZooKeeper (Docker)
+- Maven
+
+---
+
+## 📁 Project Structure
+helix-demo/
+├── pom.xml
+└── src/main/java/com/helix/demo/
+├── setup/HelixClusterSetup.java         # Initializes the cluster, adds nodes/resources
+├── controller/HelixController.java      # Starts the Helix controller
+└── participant/HelixParticipant.java    # Registers a participant node (no state logic)
+
+---
+
+## 🚀 How to Run Locally
+
+### 1. Start ZooKeeper
+
+```bash
+docker run -d --name zk -p 2181:2181 zookeeper
+
+2. Compile and Initialize the Cluster (run once)
+mvn clean compile
+mvn exec:java -Dexec.mainClass="com.helix.demo.setup.HelixClusterSetup"
+
+This will:
+	•	Create a Helix cluster named MyCluster
+	•	Add two participants: nodeA, nodeB
+	•	Add a resource with 2 partitions and rebalance them
+
+
+3. Start the Helix Controller
+mvn exec:java -Dexec.mainClass="com.helix.demo.controller.HelixController"
+
+Keep this running in one terminal.
+
+4. Start Participants (in separate terminals)
+mvn exec:java -Dexec.mainClass="com.helix.demo.participant.HelixParticipant" -Dexec.args="nodeA"
+
+mvn exec:java -Dexec.mainClass="com.helix.demo.participant.HelixParticipant" -Dexec.args="nodeB"
+
+You should see:
+Participant nodeA running (no state logic). Press Enter to exit.
+
+Code Explanation – HelixParticipant.java
+This participant connects to the cluster but does not handle any role transitions.
+
+public class HelixParticipant {
+    public static void main(String[] args) throws Exception {
+        String instance = args.length > 0 ? args[0] : "nodeA";
+
+        HelixManager manager = HelixManagerFactory.getZKHelixManager(
+            "MyCluster", instance, InstanceType.PARTICIPANT, "localhost:2181");
+
+        manager.connect();
+        System.out.printf("Participant %s running (no state logic). Press Enter to exit.%n", instance);
+        System.in.read();
+        manager.disconnect();
+    }
+}
+
+Explanation:
+	•	Connects to the Helix cluster using ZooKeeper
+	•	Registers itself as a Participant
+	•	Keeps running until Enter is pressed
+	•	Disconnects on exit
+
+⸻
+
+⚠️ Notes
+	•	This project uses helix-core:1.4.3, which no longer includes the state machine API
+	•	If you want full role transitions (e.g., Master/Slave), downgrade to helix-core:0.9.7
+<dependency>
+  <groupId>org.apache.helix</groupId>
+  <artifactId>helix-core</artifactId>
+  <version>0.9.7</version>
+</dependency>
